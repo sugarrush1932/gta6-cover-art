@@ -19,12 +19,20 @@ const SIZES = [
   { id: 'story', label: 'Story · 1080 × 1920', w: 1080, h: 1920 },
 ];
 
-/** The sample photographs bundled with the studio, each with its resting focus. */
+/**
+ * The sample photographs bundled with the studio, each with its resting focus.
+ * They star the studio's two leads — Lucia and Jason — across their signature
+ * setups, with the Keys captain along for local colour, so a cover made from
+ * the samples alone already reads as a Palm City key-art collage.
+ */
 const SAMPLES = [
-  { name: 'Boulevard', src: 'samples/boulevard.jpg', x: 0.5, y: 0.30 },
-  { name: 'Rooftop', src: 'samples/rooftop.jpg', x: 0.5, y: 0.26 },
-  { name: 'Neon', src: 'samples/neon.jpg', x: 0.5, y: 0.34 },
-  { name: 'Pier', src: 'samples/pier.jpg', x: 0.42, y: 0.30 },
+  { name: 'Lucia', src: 'samples/lucia-car.jpg', x: 0.52, y: 0.27 },
+  { name: 'Jason', src: 'samples/jason-neon.jpg', x: 0.55, y: 0.30 },
+  { name: 'Lucia & Jason', src: 'samples/duo-diner.jpg', x: 0.50, y: 0.40 },
+  { name: 'The Captain', src: 'samples/captain.jpg', x: 0.50, y: 0.32 },
+  { name: 'Jason, Close', src: 'samples/jason-close.jpg', x: 0.50, y: 0.45 },
+  { name: 'The Mugshot', src: 'samples/lucia-mugshot.jpg', x: 0.45, y: 0.30 },
+  { name: 'The Keys', src: 'samples/jason-keys.jpg', x: 0.38, y: 0.38 },
 ];
 
 const canvas = document.getElementById('cover');

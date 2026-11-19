@@ -32,8 +32,12 @@ in the colours of the day the photos were taken.
 
 The lettering faces are Anton and Pacifico, both under the SIL Open Font License
 (their license texts sit beside them in `app/fonts/`). The sample photographs
-were made with an image model and are free to use. No Rockstar Games logo,
-artwork or font is used anywhere.
+were made with an image model and are free to use: they star the studio's own
+two leads — Lucia and Jason — in their signature setups (the boulevard hero
+shot, the diner at night, her mugshot, his Keys pickup) with the Keys captain
+along for local colour, so even the bundled samples compose into a cover that
+reads as Palm City key art. No Rockstar Games logo, artwork or font is used
+anywhere.
 
 ## Run it
 
