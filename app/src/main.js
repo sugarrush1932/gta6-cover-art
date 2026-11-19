@@ -6,7 +6,7 @@
 // on an undo stack. The canvas is always rendered at the full export size, so
 // what you see is byte-for-byte the PNG you get.
 
-import { INK_RAMPS, buildGrainTile, matchPaletteFromPhotos, seededRandom } from './ink.js';
+import { INK_RAMPS, DEFAULT_FX, buildGrainTile, matchPaletteFromPhotos, seededRandom } from './ink.js';
 import { LAYOUTS, buildLayout, pointInPolygon, polygonBox } from './layouts.js';
 import { renderCover, tracePolygon } from './cover.js';
 import { runShot } from './shots.js';
@@ -21,18 +21,20 @@ const SIZES = [
 
 /**
  * The sample photographs bundled with the studio, each with its resting focus.
- * They star the studio's two leads — Lucia and Jason — across their signature
- * setups, with the Keys captain along for local colour, so a cover made from
- * the samples alone already reads as a Palm City key-art collage.
+ * They star the studio's two leads — Lucia and Jason, the same two faces in
+ * every frame — across one long Palm City day: a convertible at sunset, a neon
+ * gas station, a diner, a booking photo, a boat wake and a rain-slick night
+ * ride, so a cover made from the samples alone already reads as key art.
  */
 const SAMPLES = [
-  { name: 'Lucia', src: 'samples/lucia-car.jpg', x: 0.52, y: 0.27 },
-  { name: 'Jason', src: 'samples/jason-neon.jpg', x: 0.55, y: 0.30 },
-  { name: 'Lucia & Jason', src: 'samples/duo-diner.jpg', x: 0.50, y: 0.40 },
-  { name: 'The Captain', src: 'samples/captain.jpg', x: 0.50, y: 0.32 },
-  { name: 'Jason, Close', src: 'samples/jason-close.jpg', x: 0.50, y: 0.45 },
-  { name: 'The Mugshot', src: 'samples/lucia-mugshot.jpg', x: 0.45, y: 0.30 },
-  { name: 'The Keys', src: 'samples/jason-keys.jpg', x: 0.38, y: 0.38 },
+  { name: 'Lucia, Hero', src: 'samples/lucia-convertible.jpg', x: 0.44, y: 0.36 },
+  { name: 'Jason, Night Fuel', src: 'samples/jason-gasstation.jpg', x: 0.50, y: 0.42 },
+  { name: 'The Duo, Diner', src: 'samples/duo-diner.jpg', x: 0.52, y: 0.36 },
+  { name: 'Palm Boulevard', src: 'samples/palm-boulevard.jpg', x: 0.50, y: 0.45 },
+  { name: 'Jason, Portrait', src: 'samples/jason-portrait.jpg', x: 0.50, y: 0.40 },
+  { name: 'Lucia, Booking Photo', src: 'samples/lucia-mugshot.jpg', x: 0.51, y: 0.40 },
+  { name: 'Boat Wake', src: 'samples/boat-wake.jpg', x: 0.50, y: 0.50 },
+  { name: 'Jason, Night Rain', src: 'samples/jason-bike.jpg', x: 0.50, y: 0.38 },
 ];
 
 const canvas = document.getElementById('cover');
@@ -40,14 +42,17 @@ const status = document.getElementById('status');
 
 const state = {
   layout: 'keyart',
-  grade: 'sunset',
+  grade: 'spectrum',
   caption: 'Palm City',
   subtitle: 'neon hearts',
-  tagline: 'One city. Every light tells a story.',
-  badge: 'est',
+  tagline: 'One city. Two hearts. No brakes.',
+  quote: 'A postcard from the edge of the map',
+  badge: 'original',
   heat: 4,
   frame: 'paper',
   size: 'portrait',
+  furniture: true,
+  fx: { ...DEFAULT_FX },
   panels: {},
 };
 
@@ -176,9 +181,11 @@ function commit() {
 
 function restore(json) {
   Object.assign(state, JSON.parse(json));
+  state.fx = { ...DEFAULT_FX, ...(state.fx ?? {}) };
   exactSize = null;
   matchStale = true;
   syncWordInputs();
+  syncFxControls();
   redraw();
 }
 
@@ -208,6 +215,7 @@ function chip(parent, label, active, onClick) {
 }
 
 function buildPhotoStrip() {
+  document.getElementById('photos-heading').textContent = `Photos · ${photos.length} loaded`;
   const strip = document.getElementById('photo-strip');
   strip.replaceChildren();
   photos.forEach((photo, i) => {
@@ -240,24 +248,44 @@ function buildPanelList() {
   }
 }
 
+/** A tiny inline thumbnail of a layout: its panel shapes, drawn as SVG rects. */
+const THUMB_RECTS = {
+  keyart: [[0, 0, 40, 64], [42, 0, 18, 28], [62, 0, 22, 28], [42, 30, 42, 20], [42, 52, 18, 12], [62, 52, 22, 12]],
+  nine: [[0, 0, 27, 20], [28, 0, 27, 20], [56, 0, 28, 20], [0, 21, 27, 20], [28, 21, 27, 20], [56, 21, 28, 20], [0, 42, 27, 22], [28, 42, 27, 22], [56, 42, 28, 22]],
+  slant: [[0, 0, 41, 31], [43, 0, 41, 31], [0, 33, 41, 31], [43, 33, 41, 31]],
+  story: [[0, 0, 84, 13], [0, 15, 41, 16], [43, 15, 41, 16], [0, 33, 41, 15], [43, 33, 41, 15], [0, 50, 84, 14]],
+  snapshots: [[4, 6, 34, 26], [46, 2, 34, 26], [26, 34, 34, 26]],
+  bleed: [[0, 0, 84, 64]],
+};
+
+function layoutThumbSvg(id) {
+  const rects = (THUMB_RECTS[id] ?? []).map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.5"/>`).join('');
+  return `<svg viewBox="0 0 84 64" aria-hidden="true">${rects}</svg>`;
+}
+
 function buildChoiceRows() {
   const layoutRow = document.getElementById('layout-row');
   layoutRow.replaceChildren();
   for (const item of LAYOUTS) {
-    chip(layoutRow, item.label, state.layout === item.id, () => {
+    const btn = chip(layoutRow, item.label, state.layout === item.id, () => {
       state.layout = item.id;
       commit();
       redraw();
     });
+    btn.classList.add('layout-chip');
+    btn.insertAdjacentHTML('afterbegin', layoutThumbSvg(item.id));
   }
   const gradeRow = document.getElementById('grade-row');
   gradeRow.replaceChildren();
   for (const [key, ramp] of Object.entries(INK_RAMPS)) {
-    chip(gradeRow, ramp.label, state.grade === key, () => {
+    const btn = chip(gradeRow, ramp.label, state.grade === key, () => {
       state.grade = key;
       commit();
       redraw();
     });
+    btn.classList.add('grade-chip');
+    const stops = ramp.stops.map((s) => `rgb(${s[0]}, ${s[1]}, ${s[2]})`).join(', ');
+    btn.insertAdjacentHTML('afterbegin', `<span class="swatch" style="background: linear-gradient(90deg, ${stops})"></span>`);
   }
   const sizeRow = document.getElementById('size-row');
   sizeRow.replaceChildren();
@@ -286,10 +314,64 @@ function buildChoiceRows() {
   }
 }
 
+/** The finishing sliders every grade shares, built once and kept in step. */
+const FX_ROWS = [
+  ['strength', 'Ink strength'],
+  ['contrast', 'Contrast'],
+  ['saturation', 'Saturation'],
+  ['grain', 'Paper grain'],
+  ['vignette', 'Vignette'],
+];
+
+function buildFxControls() {
+  const wrap = document.getElementById('fx-controls');
+  for (const [key, label] of FX_ROWS) {
+    const row = document.createElement('label');
+    row.className = 'slider fx-row';
+    row.append(document.createTextNode(label));
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0';
+    input.max = '100';
+    input.value = String(Math.round(state.fx[key] * 100));
+    input.dataset.fx = key;
+    input.addEventListener('input', () => {
+      state.fx[key] = Number(input.value) / 100;
+      redraw();
+    });
+    input.addEventListener('change', commit);
+    row.appendChild(input);
+    wrap.appendChild(row);
+  }
+  const halfRow = document.createElement('label');
+  halfRow.className = 'check-row';
+  const half = document.createElement('input');
+  half.type = 'checkbox';
+  half.id = 'fx-halftone';
+  half.checked = state.fx.halftone;
+  half.addEventListener('change', () => {
+    state.fx.halftone = half.checked;
+    commit();
+    redraw();
+  });
+  halfRow.append(half, document.createTextNode('Halftone dots'));
+  wrap.appendChild(halfRow);
+}
+
+/** Pushes the state's finishing values back into the sliders. */
+function syncFxControls() {
+  document.querySelectorAll('#fx-controls input[type="range"]').forEach((input) => {
+    input.value = String(Math.round(state.fx[input.dataset.fx] * 100));
+  });
+  const half = document.getElementById('fx-halftone');
+  if (half) half.checked = state.fx.halftone;
+}
+
 function refreshControls() {
   buildPanelList();
   buildChoiceRows();
   buildPhotoStrip();
+  syncFxControls();
   const slot = selectedPanel ? state.panels[selectedPanel] : null;
   const zoom = document.getElementById('zoom');
   if (slot) zoom.value = String(slot.zoom);
@@ -304,11 +386,13 @@ function syncWordInputs() {
   document.getElementById('caption').value = state.caption;
   document.getElementById('subtitle').value = state.subtitle;
   document.getElementById('tagline').value = state.tagline;
+  document.getElementById('quote').value = state.quote ?? '';
   document.getElementById('badge').value = state.badge;
   document.getElementById('frame').value = state.frame;
+  document.getElementById('furniture').checked = state.furniture !== false;
 }
 
-for (const [id, key] of [['caption', 'caption'], ['subtitle', 'subtitle'], ['tagline', 'tagline']]) {
+for (const [id, key] of [['caption', 'caption'], ['subtitle', 'subtitle'], ['tagline', 'tagline'], ['quote', 'quote']]) {
   const input = document.getElementById(id);
   input.addEventListener('input', () => {
     state[key] = input.value;
@@ -325,6 +409,41 @@ document.getElementById('badge').addEventListener('change', (e) => {
 
 document.getElementById('frame').addEventListener('change', (e) => {
   state.frame = e.target.value;
+  commit();
+  redraw();
+});
+
+document.getElementById('furniture').addEventListener('change', (e) => {
+  state.furniture = e.target.checked;
+  commit();
+  redraw();
+});
+
+/* ————— panel quick actions ————— */
+
+document.getElementById('centre-panel').addEventListener('click', () => {
+  const slot = selectedPanel ? state.panels[selectedPanel] : null;
+  if (!slot) return;
+  slot.zoom = 1;
+  slot.ox = 0;
+  slot.oy = 0;
+  commit();
+  redraw();
+});
+
+document.getElementById('fill-panels').addEventListener('click', () => {
+  const slot = selectedPanel ? state.panels[selectedPanel] : null;
+  if (!slot) return;
+  for (const entry of panelEntries()) state.panels[entry.id].photo = slot.photo;
+  commit();
+  redraw();
+});
+
+document.getElementById('spread-panels').addEventListener('click', () => {
+  if (photos.length === 0) return;
+  panelEntries().forEach((entry, i) => {
+    state.panels[entry.id].photo = i % photos.length;
+  });
   commit();
   redraw();
 });
@@ -478,6 +597,8 @@ const api = {
     exactSize = { id: 'exact', label: `${w} × ${h}`, w, h };
   },
 };
+
+buildFxControls();
 
 await loadStudioFonts().catch(() => {});
 await loadSamples();

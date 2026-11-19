@@ -4,10 +4,11 @@
 // shows the app at its best without a hand on the mouse:
 //   ?shot=cover   the exported cover alone, edge to edge (the cover screenshot)
 //   ?shot=editor  the full editor with photos loaded and a panel selected
-// Words and dressing come from the query: caption, subtitle, tagline, layout,
-// grade, size (a post-size id) or px (an exact WxH), badge, heat, frame, assign
-// (a comma list of photo slots, one per panel in reading order) and panel (the
-// selected panel in the editor scene). window.__shotReady is set once painted.
+// Words and dressing come from the query: caption, subtitle, tagline, quote,
+// layout, grade, size (a post-size id) or px (an exact WxH), badge, heat, frame,
+// furniture (0/1), assign (a comma list of photo slots, one per panel in reading
+// order) and panel (the selected panel in the editor scene). window.__shotReady
+// is set once painted.
 
 /** Applies one scene described by `query` through the editor's own API. */
 export async function runShot(shot, query, api) {
@@ -15,6 +16,8 @@ export async function runShot(shot, query, api) {
   if (query.get('caption')) state.caption = query.get('caption');
   if (query.get('subtitle') !== null) state.subtitle = query.get('subtitle');
   if (query.get('tagline')) state.tagline = query.get('tagline');
+  if (query.get('quote')) state.quote = query.get('quote');
+  if (query.get('furniture') !== null) state.furniture = query.get('furniture') !== '0';
   if (query.get('layout')) state.layout = query.get('layout');
   if (query.get('grade')) state.grade = query.get('grade');
   if (query.get('badge')) state.badge = query.get('badge');

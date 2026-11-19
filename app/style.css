@@ -167,6 +167,48 @@ button.match.active {
 
 .slider input { flex: 1; accent-color: #ff2e88; }
 
+/* Layout picker: one thumbnail button per composition, panels drawn as shapes. */
+.layout-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 9px 7px !important;
+}
+
+.layout-chip svg { width: 52px; height: 40px; fill: rgba(242, 236, 223, 0.55); }
+
+.layout-chip.active svg { fill: #fff; }
+
+/* Grade chips wear a swatch of their own ramp. */
+.grade-chip { display: inline-flex; align-items: center; gap: 7px; }
+
+.swatch {
+  width: 26px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex: 0 0 auto;
+}
+
+/* The finishing sliders under the grade chips. */
+#fx-controls { margin-top: 10px; }
+
+.fx-row { margin-bottom: 6px !important; font-size: 12.5px !important; }
+
+.check-row {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.check-row input { accent-color: #ff2e88; width: 16px; height: 16px; }
+
+.quick-row { margin-top: 9px; }
+
+.quick-row button { font-size: 12px; padding: 5px 9px; }
+
 .heat-row { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 13px; margin-bottom: 9px; }
 
 .heat-stars button {

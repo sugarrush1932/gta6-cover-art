@@ -1,21 +1,39 @@
 // ink.js — the Vice Ink print engine.
 //
 // Every photo panel of a cover is run through a print-shop treatment before it is
-// composited: its tones are mapped through a five-stop ink ramp (a gradient map),
+// composited: its tones are mapped through a multi-stop ink ramp (a gradient map),
 // a halftone dot screen is bitten into the mid-tones and shadows, and a whisper of
 // paper grain goes over the top. The result reads as illustrated poster art rather
 // than a photograph, which is the whole look of a game cover.
 //
-// The sixth grade, Palette Match, is the studio's signature: it reads the dominant
-// colours out of the loaded photos and mixes a bespoke ink ramp from them, so the
-// cover is printed in the colours of the day the photos were taken.
+// The house grade is Vice Spectrum: a seven-stop sunset spectrum — deep purple
+// shadows, violet and magenta mids, a hot pink heart, then orange, amber and pale
+// gold highlights — so a face stays luminous while the sky around it burns.
+// Neon Night runs the same spectrum backwards into blue for after-dark shots, and
+// Comic Ink posterises the tones under a heavy halftone screen for a newsprint
+// punch. The older duotone inks (Sunset, Neon, Coast, Poster Pop, Newsprint) stay
+// on the shelf, and Palette Match is still the studio's signature: it reads the
+// dominant colours out of the loaded photos and mixes a bespoke ink ramp from
+// them, so the cover is printed in the colours of the day the photos were taken.
 
-/** The five-stop ink ramps, darkest ink first, paper last. Stops are [r, g, b]. */
+/** The ink ramps, darkest ink first, paper last. Stops are [r, g, b]. */
 export const INK_RAMPS = {
+  spectrum: {
+    label: 'Vice Spectrum',
+    stops: [[26, 10, 46], [80, 18, 104], [156, 26, 118], [232, 52, 108], [255, 106, 58], [255, 172, 84], [255, 233, 183]],
+    dot: 0.22,
+    bloom: 0.3,
+  },
   sunset: {
     label: 'Sunset Ink',
     stops: [[38, 16, 54], [122, 28, 84], [224, 65, 94], [255, 138, 61], [255, 224, 168]],
     dot: 0.55,
+  },
+  neonnight: {
+    label: 'Neon Night',
+    stops: [[6, 10, 36], [24, 22, 84], [72, 32, 150], [168, 36, 168], [255, 72, 168], [96, 205, 255], [226, 248, 255]],
+    dot: 0.3,
+    bloom: 0.34,
   },
   neon: {
     label: 'Neon Ink',
@@ -25,6 +43,11 @@ export const INK_RAMPS = {
   coast: {
     label: 'Coast Ink',
     stops: [[8, 38, 48], [12, 96, 104], [32, 168, 150], [240, 196, 96], [255, 240, 205]],
+    dot: 0.45,
+  },
+  comic: {
+    label: 'Comic Ink',
+    stops: [[28, 12, 44], [110, 22, 92], [208, 38, 92], [248, 92, 52], [252, 178, 64], [252, 240, 205]],
     dot: 0.45,
   },
   pop: {
@@ -37,6 +60,16 @@ export const INK_RAMPS = {
     stops: [[24, 20, 18], [74, 64, 58], [138, 126, 112], [198, 188, 172], [246, 240, 228]],
     dot: 0.7,
   },
+};
+
+/** The finishing controls every grade shares, at their resting values. */
+export const DEFAULT_FX = {
+  strength: 0.92,
+  contrast: 0.06,
+  saturation: 0.08,
+  grain: 0.3,
+  vignette: 0.5,
+  halftone: true,
 };
 
 /** Builds a 256-entry lookup table that maps a luminance byte to an ink colour. */
@@ -57,14 +90,21 @@ export function buildRampLut(stops) {
 
 /**
  * Inks one panel in place: `data` is the ImageData of a photo already drawn at the
- * panel's pixel size. Tones go through the ramp, a halftone screen is applied with
- * cell size `dotCell` (in pixels), and `hueKeep` (0..1) blends a little of the
- * photo's own colour back in so skin and sky do not go fully flat.
+ * panel's pixel size. Tones go through the ramp (or stay photographic when `lut`
+ * is null), a halftone screen is applied with cell size `dotCell` (in pixels), and
+ * `hueKeep` (0..1) blends a little of the photo's own colour back in so skin and
+ * sky do not go fully flat. `fx` carries the finishing sliders: strength mixes the
+ * ink against the photo's own contrast-adjusted colours, contrast and saturation
+ * shape both, and a ramp's `posterize` (when set) flattens the tones into bands.
  */
-export function inkPixels(data, lut, dotStrength, dotCell, hueKeep) {
+export function inkPixels(data, lut, dotStrength, dotCell, hueKeep, fx, posterize = 0) {
   const px = data.data;
   const w = data.width;
   const half = dotCell / 2;
+  const strength = fx?.strength ?? 1;
+  const contrast = fx?.contrast ?? 0;
+  const saturation = fx?.saturation ?? 0;
+  const contrastF = 1 + contrast;
   for (let i = 0, p = 0; i < px.length; i += 4, p++) {
     const r = px[i];
     const g = px[i + 1];
@@ -74,14 +114,42 @@ export function inkPixels(data, lut, dotStrength, dotCell, hueKeep) {
     lum = lum < 128
       ? Math.round((lum * lum) / 128)
       : 255 - Math.round(((255 - lum) * (255 - lum)) / 128);
-    const li = lum * 3;
-    let nr = lut[li];
-    let ng = lut[li + 1];
-    let nb = lut[li + 2];
-    if (hueKeep > 0) {
-      nr = Math.round(nr + (r - nr) * hueKeep);
-      ng = Math.round(ng + (g - ng) * hueKeep);
-      nb = Math.round(nb + (b - nb) * hueKeep);
+    lum = Math.max(0, Math.min(255, Math.round((lum - 128) * contrastF + 128)));
+    if (posterize > 1) {
+      lum = Math.round((lum / 255) * (posterize - 1)) * (255 / (posterize - 1));
+    }
+    // The photo's own colours, contrast-shaped: what the ink is mixed against.
+    let br = Math.max(0, Math.min(255, Math.round((r - 128) * contrastF + 128)));
+    let bg = Math.max(0, Math.min(255, Math.round((g - 128) * contrastF + 128)));
+    let bb = Math.max(0, Math.min(255, Math.round((b - 128) * contrastF + 128)));
+    let nr;
+    let ng;
+    let nb;
+    if (lut) {
+      const li = Math.round(lum) * 3;
+      nr = lut[li];
+      ng = lut[li + 1];
+      nb = lut[li + 2];
+      if (hueKeep > 0) {
+        nr = Math.round(nr + (r - nr) * hueKeep);
+        ng = Math.round(ng + (g - ng) * hueKeep);
+        nb = Math.round(nb + (b - nb) * hueKeep);
+      }
+      if (strength < 1) {
+        nr = Math.round(br + (nr - br) * strength);
+        ng = Math.round(bg + (ng - bg) * strength);
+        nb = Math.round(bb + (nb - bb) * strength);
+      }
+    } else {
+      nr = br;
+      ng = bg;
+      nb = bb;
+    }
+    if (saturation !== 0) {
+      const grey = (nr * 77 + ng * 150 + nb * 29) >> 8;
+      nr = Math.max(0, Math.min(255, Math.round(grey + (nr - grey) * (1 + saturation))));
+      ng = Math.max(0, Math.min(255, Math.round(grey + (ng - grey) * (1 + saturation))));
+      nb = Math.max(0, Math.min(255, Math.round(grey + (nb - grey) * (1 + saturation))));
     }
     if (dotStrength > 0) {
       const x = p % w;
@@ -169,7 +237,7 @@ export function matchPaletteFromPhotos(images) {
     hslToRgb(hueA, 0.82, 0.7),
     hslToRgb((hueA + 40) % 360, 0.9, Math.min(0.95, 0.82 + (lightest / 255) * 0.13)),
   ];
-  return { label: 'Palette Match', stops, dot: 0.5 };
+  return { label: 'Palette Match', stops, dot: 0.5, bloom: 0.26 };
 }
 
 /** A deterministic seeded random source, so every render of a cover is identical. */

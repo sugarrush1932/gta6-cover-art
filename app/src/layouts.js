@@ -26,41 +26,55 @@ function panel(id, label, poly, photo) {
   return { id, label, poly, photo, kind: 'photo' };
 }
 
-/** The Key Art composition: a tall hero, a three-deep column, a stacked pair and the title. */
+/**
+ * The Key Art composition: a wall of panels with the title lettered over them.
+ * The hero takes the left, a face and a coastline stack at the top right, and
+ * the giant title lockup sits across the middle of the sheet, overlapping the
+ * panels the way real key art stacks its lettering over the art. The foot of
+ * the sheet is left to the furniture strip every cover carries.
+ */
 function keyArtLayout(aspect) {
-  const slant = 0.035;
+  const slant = 0.03;
   if (aspect >= 1.15) {
     return {
       panels: [
-        panel('hero', 'Hero', cell(0, 0, 0.40, 1, slant), 0),
-        panel('mid-a', 'Panel 2', cell(0.415, 0, 0.665, 0.335, slant), 1),
-        panel('mid-b', 'Panel 3', cell(0.415, 0.35, 0.665, 0.675, slant), 2),
-        panel('mid-c', 'Panel 4', cell(0.415, 0.69, 0.665, 1, slant), 3),
-        panel('top-r', 'Panel 5', cell(0.68, 0, 1, 0.40, slant), 2),
-        panel('mid-r', 'Panel 6', cell(0.68, 0.415, 1, 0.635, slant), 1),
+        panel('hero', 'Hero', cell(0, 0, 0.545, 1, slant), 0),
+        panel('face', 'Panel 2', cell(0.56, 0, 0.795, 0.44, slant), 4),
+        panel('coast', 'Panel 3', cell(0.81, 0, 1, 0.44, slant), 3),
+        panel('mid', 'Panel 4', cell(0.56, 0.455, 1, 0.75, slant), 1),
+        panel('low-a', 'Panel 5', cell(0.56, 0.765, 0.79, 1, slant), 2),
+        panel('low-b', 'Panel 6', cell(0.805, 0.765, 1, 1, slant), 6),
       ],
-      title: { kind: 'block', x: 0.68, y: 0.65, w: 0.32, h: 0.35 },
+      title: { kind: 'hero', cx: 0.5, top: 0.475, maxW: 0.95, start: 0.30, lines: 1, seal: { x: 0.905, y: 0.15 } },
     };
   }
   if (aspect >= 0.85) {
     return {
       panels: [
-        panel('hero', 'Hero', cell(0, 0, 0.58, 0.58, slant), 0),
-        panel('top-r', 'Panel 2', cell(0.595, 0, 1, 0.28, slant), 1),
-        panel('mid-r', 'Panel 3', cell(0.595, 0.295, 1, 0.58, slant), 2),
-        panel('bot-a', 'Panel 4', cell(0, 0.595, 0.30, 1, slant), 3),
-        panel('bot-b', 'Panel 5', cell(0.315, 0.595, 0.58, 1, slant), 1),
+        panel('top-a', 'Hero', cell(0, 0, 0.40, 0.36, slant), 7),
+        panel('top-b', 'Panel 2', cell(0.415, 0, 0.70, 0.36, slant), 0),
+        panel('top-c', 'Panel 3', cell(0.715, 0, 1, 0.36, slant), 2),
+        panel('mid-a', 'Panel 4', cell(0, 0.375, 0.60, 0.685, slant), 6),
+        panel('face', 'Panel 5', cell(0.615, 0.375, 1, 0.685, slant), 4),
+        panel('bot-a', 'Panel 6', cell(0, 0.70, 0.33, 0.875, slant), 3),
+        panel('bot-b', 'Panel 7', cell(0.345, 0.70, 0.66, 0.875, slant), 5),
+        panel('bot-c', 'Panel 8', cell(0.675, 0.70, 1, 0.875, slant), 1),
       ],
-      title: { kind: 'block', x: 0.595, y: 0.595, w: 0.405, h: 0.405 },
+      title: { kind: 'hero', cx: 0.5, top: 0.40, maxW: 0.96, start: 0.20, lines: 2, seal: { x: 0.135, y: 0.46 } },
     };
   }
   return {
     panels: [
-      panel('hero', 'Hero', cell(0, 0, 1, 0.44, slant), 0),
-      panel('mid-a', 'Panel 2', cell(0, 0.455, 0.49, 0.70, slant), 1),
-      panel('mid-b', 'Panel 3', cell(0.51, 0.455, 1, 0.70, slant), 2),
+      panel('face', 'Hero', cell(0, 0, 0.63, 0.52, slant), 4),
+      panel('top-r', 'Panel 2', cell(0.645, 0, 1, 0.26, slant), 0),
+      panel('mid-r', 'Panel 3', cell(0.645, 0.275, 1, 0.52, slant), 2),
+      panel('mid-a', 'Panel 4', cell(0, 0.535, 0.49, 0.72, slant), 1),
+      panel('mid-b', 'Panel 5', cell(0.51, 0.535, 1, 0.72, slant), 6),
+      panel('bot-a', 'Panel 6', cell(0, 0.735, 0.33, 0.875, slant), 5),
+      panel('bot-b', 'Panel 7', cell(0.345, 0.735, 0.66, 0.875, slant), 3),
+      panel('bot-c', 'Panel 8', cell(0.675, 0.735, 1, 0.875, slant), 7),
     ],
-    title: { kind: 'block', x: 0, y: 0.715, w: 1, h: 0.285 },
+    title: { kind: 'hero', cx: 0.5, top: 0.45, maxW: 0.96, start: 0.175, lines: 2, seal: { x: 0.815, y: 0.505 } },
   };
 }
 
