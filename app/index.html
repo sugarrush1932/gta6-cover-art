@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vice Ink Studio — your photos as GTA-style cover art</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">VICE INK</span>
+    <span class="brand-sub">cover studio</span>
+  </div>
+  <p class="brand-line">Your photos, printed as Vice City key art — panels, ink and neon, exported as a PNG.</p>
+  <div class="top-actions">
+    <button id="undo" type="button" class="ghost">Undo</button>
+    <button id="redo" type="button" class="ghost">Redo</button>
+    <button id="export-all" type="button" class="ghost">Export all sizes</button>
+    <button id="export" type="button" class="primary">Export PNG</button>
+  </div>
+</header>
+<main class="studio">
+  <aside class="rail">
+    <section>
+      <h2>Photos</h2>
+      <label class="drop">Add your photos
+        <input id="files" type="file" accept="image/*" multiple hidden>
+      </label>
+      <div id="photo-strip" class="photo-strip"></div>
+      <p class="hint">Tap a panel on the cover, then tap a photo to place it there. Drag inside a panel to move its photo; scroll over it to zoom.</p>
+    </section>
+    <section>
+      <h2>Panel</h2>
+      <div id="panel-list" class="chip-row"></div>
+      <label class="slider">Zoom <input id="zoom" type="range" min="1" max="2.6" step="0.01" value="1"></label>
+    </section>
+    <section>
+      <h2>Layout</h2>
+      <div id="layout-row" class="chip-row"></div>
+    </section>
+    <section>
+      <h2>Ink grade</h2>
+      <div id="grade-row" class="chip-row"></div>
+      <button id="match" type="button" class="match">Palette Match — mix the ink from my photos</button>
+    </section>
+    <section>
+      <h2>Words</h2>
+      <label>Title <input id="caption" type="text" maxlength="30" value="Palm City"></label>
+      <label>Script subtitle <input id="subtitle" type="text" maxlength="34" value="neon hearts"></label>
+      <label>Tagline <input id="tagline" type="text" maxlength="44" value="One city. Every light tells a story."></label>
+    </section>
+    <section>
+      <h2>Dressing</h2>
+      <label>Badge
+        <select id="badge">
+          <option value="none">No badge</option>
+          <option value="new">New — Summer 2026</option>
+          <option value="est" selected>Est. 2026</option>
+          <option value="collectors">Collectors Edition</option>
+        </select>
+      </label>
+      <div class="heat-row"><span>Heat</span><span id="heat-stars" class="heat-stars"></span></div>
+      <label>Frame
+        <select id="frame">
+          <option value="paper" selected>Paper white seams</option>
+          <option value="ink">Ink black seams</option>
+        </select>
+      </label>
+    </section>
+    <section>
+      <h2>Post size</h2>
+      <div id="size-row" class="chip-row"></div>
+      <p id="status" role="status" class="hint"></p>
+    </section>
+  </aside>
+  <section class="stage">
+    <canvas id="cover" width="1080" height="1350"></canvas>
+  </section>
+</main>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
